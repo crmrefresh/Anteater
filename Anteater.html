@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anteater</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Antonio:wght@600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#F4F4F5;--card:#FFFFFF;--ink:#000000;--muted:#808080;--line:#E9EFFD;--accent:#1C53E5;--accent-soft:#E9EFFD;
+--ok:#1C53E5;--ok-soft:#E9EFFD;--warn:#000000;--warn-soft:#F4F4F5;--ref:#808080;--ref-soft:#F4F4F5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000000;--card:#111111;--ink:#FFFFFF;--muted:#808080;--line:#2a2a2a;
+--accent:#6F93F0;--accent-soft:#0f1d45;--ok:#6F93F0;--ok-soft:#0f1d45;--warn:#FFFFFF;--warn-soft:#1c1c1c;--ref:#808080;--ref-soft:#1c1c1c}}
+:root[data-theme="dark"]{--bg:#000000;--card:#111111;--ink:#FFFFFF;--muted:#808080;--line:#2a2a2a;--accent:#6F93F0;--accent-soft:#0f1d45;
+--ok:#6F93F0;--ok-soft:#0f1d45;--warn:#FFFFFF;--warn-soft:#1c1c1c;--ref:#808080;--ref-soft:#1c1c1c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "DM Sans",system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
+h1{font-family:Antonio,"DM Sans",sans-serif;font-weight:600;font-size:30px;letter-spacing:.5px;text-transform:uppercase;margin:0 0 4px}
+h2{font-size:18px;margin:0 0 8px}.sub{color:var(--muted);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.drops{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:26px 14px;text-align:center;cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop.done{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.drop strong{display:block;font-size:16px}
+h1,h2{color:var(--ink)}.note{font-size:13px;color:var(--muted)}
+.map{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+.map label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+select{font:inherit;font-size:14px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.btn{background:var(--accent);color:var(--card);border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:500;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:default}.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px}
+.stat{border-radius:10px;padding:12px 14px;background:var(--ref-soft);cursor:pointer;border:2px solid transparent}
+.stat.on{border-color:var(--accent)!important}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0 22px}
+.sum div{background:var(--accent);color:#FFFFFF;border-radius:10px;padding:12px 14px}
+.sum b{display:block;font-size:26px;line-height:1.1}.sum span{font-size:13px;opacity:.9}.sum small{display:block;font-size:12px;opacity:.85;margin-top:2px}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.stat b{display:block;font-size:26px;line-height:1.1}.stat span{font-size:13px;color:var(--muted)}
+.stat.ok{background:var(--ok-soft)}.stat.ok b{color:var(--ok)}.stat.warn{background:var(--warn-soft);border-color:var(--line)}.stat.warn b{color:var(--warn)}
+.tw{overflow:auto;border:1px solid var(--line);border-radius:8px;max-height:560px;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{position:sticky;top:0;background:var(--card);z-index:1}td.rn{color:var(--muted)}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:1px 8px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.ref{background:var(--ref-soft);color:var(--ref)}
+.rules{font-size:13px;color:var(--muted);margin:0;padding-left:18px}.rules li{margin:2px 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Anteater</h1>
+  <p class="sub">Finds each person from the client's file in their Compass export and adds their Compass primary email and group - only when the match is certain.</p>
+
+  <div class="card">
+    <div class="drops">
+      <label class="drop" id="dz-client"><strong>1. Client File</strong><span class="note" id="fn-client">CSV or Excel - the file you're importing</span>
+        <input type="file" id="f-client" accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm" hidden></label>
+      <label class="drop" id="dz-compass"><strong>2. Compass Export</strong><span class="note" id="fn-compass">The client's Compass contacts export</span>
+        <input type="file" id="f-compass" accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm" hidden></label>
+    </div>
+    <p class="note" style="margin:10px 0 0">Files are read in your browser only. Nothing is uploaded.</p>
+  </div>
+
+  <div class="card hidden" id="mapCard">
+    <h2>Check The Columns</h2>
+    <div class="note">Picked automatically - change any that are wrong.</div>
+    <div class="map" id="mapClient"></div>
+    <div class="map" id="mapCompass" style="margin-top:14px"></div>
+    <div class="row" style="margin-top:16px">
+      <details><summary class="note" style="cursor:pointer">How Matching Works</summary>
+        <ul class="rules">
+          <li><b>Email (counts on its own):</b> the client row has an email that's on exactly one Compass contact. Shared inboxes like info@, help@, office@ never count.</li>
+          <li><b>No email match?</b> If more than one Compass contact has the name (counting nicknames and small typos), the row is skipped - even if a phone or address points to one of them.</li>
+          <li><b>Name + phone / Name + address:</b> the one Compass contact with that name also has the same phone number or street address.</li>
+          <li><b>Exact name:</b> first + last name matches exactly one Compass contact.</li>
+          <li><b>Nickname / spelling:</b> one half of the name is exact and the other is a nickname (Mike / Michael) or small typo - and no other Compass contact is even close.</li>
+          <li><b>Never matches</b> when there's no last name, when the row is a company/trust or has two people in it, or when two rows in the client file land on the same Compass contact.</li>
+        </ul>
+      </details>
+      <label class="chk"><input type="checkbox" id="proper" checked onchange="this.dispatchEvent(new CustomEvent('pc', {bubbles:true}))"> Proper Case Names &amp; Addresses</label>
+      <button class="btn" id="run" disabled>Find Matches</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="resCard">
+    <div class="row">
+      <h2 style="margin:0">Results</h2>
+      <button class="btn" id="dl">Download File With Compass Emails</button>
+    </div>
+    <h2 style="margin:18px 0 0">Client File Summary</h2>
+    <div class="sum" id="sum"></div>
+    <h2 style="margin:0">Compass Matches</h2>
+    <div class="stats" id="stats"></div>
+    <div class="tw"><table id="tbl"></table></div>
+    <p class="note" id="tblNote"></p>
+  </div>
+</div>
+
+<script id="engine">
+const MATCH = (() => {
+  const FUZZY = 87;
+  const NICK = [
+    ["michael","mike","mikey","mick","mickey"],["robert","bob","bobby","rob","robbie"],["joseph","joe","joey"],
+    ["patricia","trish","trisha","patty","pat"],["elizabeth","liz","beth","betty","eliza","lizzy"],["david","dave","davey"],
+    ["james","jim","jimmy","jamie"],["thomas","tom","tommy"],["william","will","bill","billy","liam"],["richard","rick","ricky","dick","rich"],
+    ["kenneth","ken","kenny"],["matthew","matt","matty"],["christopher","chris","topher"],["christine","chris","christy","christina","tina"],
+    ["steven","steve","stephen"],["daniel","dan","danny"],["samuel","sam","sammy"],["samantha","sam","sammy"],["alexander","alex","al"],
+    ["alexandra","alex","sasha","sandra"],["nicholas","nick","nicky"],["anthony","tony"],["andrew","andy","drew"],["gregory","greg","gregg"],
+    ["jonathan","jon","john","johnny"],["edward","ed","eddie","eddy","ted"],["frederick","fred","freddy"],["theodore","ted","teddy"],
+    ["margaret","peggy","maggie","meg","marge"],["katherine","kate","katie","kathy","kat","catherine","cathy"],["susan","sue","suzy","suzie"],
+    ["cynthia","cindy"],["virginia","ginny"],["francis","frank","frankie"],["eugene","gene"],["walter","walt"],["henry","hank","harry"],
+    ["leonard","lenny","leo"],["manuel","manny"],["nathaniel","nathan","nate"],["zachary","zack","zach"],["abigail","abby"],
+    ["allison","ally","allie"],["jennifer","jen","jenny"],["rebecca","becca","becky"],["sandra","sandy"],["victoria","vicky","vicki","tori"],
+    ["gabriela","gabby","gabrielle"],["deborah","debbie","deb"],["barbara","barb","barbie"],["donald","don","donnie"],["ronald","ron","ronnie"],
+    ["timothy","tim","timmy"],["charles","charlie","chuck"],["benjamin","ben","benny"],["jacob","jake"],["joshua","josh"],["stephanie","steph"],
+    ["amanda","mandy"],["kimberly","kim"],["melissa","mel","missy"],["jessica","jess","jessie"],["danielle","dani"],["nicole","nikki"],
+  ];
+  // a nickname can belong to several names (sam = samuel / samantha), so keep all of them
+  const NICK_OF = {};
+  NICK.forEach(g => g.forEach(n => { (NICK_OF[n] = NICK_OF[n] || new Set()).add(g[0]); }));
+  const canon = t => NICK_OF[t] ? [...NICK_OF[t]] : [t];
+  const sameFirst = (a, b) => a && b && (a === b || canon(a).some(x => canon(b).includes(x)));
+
+  const ENTITY = /\b(llc|l\.l\.c|inc|corp|corporation|lp|llp|trust|trustee|ttee|estate|hdfc|foundation|church|associates|holdings?|realty|properties|management|development|fund|bank|group|partners)\b/i;
+  const MULTI = /\||\s&\s?|&|\s+and\s+|\//i;
+  const clean = v => (v == null ? "" : String(v)).replace(/ /g, " ").trim();
+  const normPart = s => clean(s).toLowerCase().replace(/\(.*?\)/g, " ").replace(/"[^"]*"/g, " ")
+    .replace(/[^a-z\s\-']/g, " ").replace(/\s+/g, " ").trim();
+  const firstTok = s => (s.split(" ")[0] || "");
+
+  function lev(a, b) {
+    if (!a || !b) return 0;
+    const m = a.length, n = b.length, dp = Array.from({ length: n + 1 }, (_, j) => j);
+    for (let i = 1; i <= m; i++) {
+      let prev = dp[0]; dp[0] = i;
+      for (let j = 1; j <= n; j++) { const t = dp[j]; dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = t; }
+    }
+    return 100 * (m + n - dp[n]) / (m + n);
+  }
+
+  // every 10-digit phone in a cell ("(917) 555-1212 (cell)", "+1 917.555.1212; 212-...")
+  const phonesIn = v => (clean(v).match(/(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g) || [])
+    .map(x => { let d = x.replace(/\D/g, ""); if (d.length === 11 && d[0] === "1") d = d.slice(1); return d; })
+    .filter(d => d.length === 10);
+  const ABBR = { street: "st", avenue: "ave", av: "ave", road: "rd", boulevard: "blvd", drive: "dr", place: "pl", lane: "ln",
+    court: "ct", terrace: "ter", parkway: "pkwy", circle: "cir", highway: "hwy", west: "w", east: "e", north: "n", south: "s",
+    apartment: "apt", unit: "apt", suite: "ste", "#": "apt" };
+  // street line 1, normalized: "268 West 117th Street" -> "268 w 117 st"
+  const normAddr = v => clean(v).toLowerCase().replace(/[.,]/g, " ").replace(/#/g, " # ").replace(/(\d+)(st|nd|rd|th)\b/g, "$1")
+    .split(/\s+/).filter(Boolean).map(t => ABBR[t] || t).join(" ");
+  const zip5 = v => (clean(v).match(/\b\d{5}\b/) || [""])[0];
+
+  // shared / role inboxes never count as a match
+  const GENERIC = /^(info|help|support|admin|administrator|office|contact|contactus|hello|hi|sales|team|mail|email|noreply|no-reply|donotreply|do-not-reply|enquiries|enquiry|inquiries|inquiry|service|services|customerservice|billing|accounts|accounting|marketing|hr|jobs|careers|frontdesk|reception|listings|leasing|management|webmaster|postmaster|feedback|orders|bookings|reservations|general|questions|press|media|newsletter|notifications|alerts|updates)([._-]?\d*)?@/i;
+  const isGeneric = e => GENERIC.test(e);
+  const emailsIn = v => (clean(v).toLowerCase().match(/[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}/g) || []);
+
+  // Turn a client row into first / last, from either First+Last columns or one Full Name column
+  function clientName(row, map) {
+    let first = map.first != null ? clean(row[map.first]) : "";
+    let last = map.last != null ? clean(row[map.last]) : "";
+    let raw = [first, last].filter(Boolean).join(" ");
+    if (map.full != null && !raw) {
+      raw = clean(row[map.full]);
+      const parts = raw.split(",").map(x => x.trim()).filter(Boolean);
+      if (parts.length === 2 && !ENTITY.test(raw)) { last = parts[0]; first = parts[1]; }
+      else { const t = raw.split(/\s+/); first = t[0] || ""; last = t.length > 1 ? t.slice(1).join(" ") : ""; }
+    } else if (first.endsWith(",") && last) {          // "Brown," / "Marie" split wrong
+      const f = last; last = first.replace(/,$/, ""); first = f;
+    }
+    return { first, last, raw };
+  }
+
+  function guessClient(header) {
+    const h = header.map(x => clean(x).toLowerCase());
+    const find = re => { const i = h.findIndex(x => re.test(x)); return i < 0 ? null : i; };
+    const first = find(/first/), last = find(/last|surname/);
+    const full = (first == null || last == null) ? find(/^(full name|name|client name|contact name|contact|owner|owner name|buyer|buyer name)$/) : null;
+    const pick = re => h.map((x, i) => re.test(x) && !/broker|agent/.test(x) ? i : null).filter(x => x != null);
+    const emails = pick(/e-?mail/);
+    const phones = pick(/phone|mobile|cell|\btel\b/).filter(i => !emails.includes(i));
+    const streets = pick(/address|street|addr\b/).filter(i => !emails.includes(i) && !/line ?2|address ?2|unit|apt|city|state|zip/.test(h[i]));
+    const zips = pick(/zip|postal/);
+    const cities = pick(/\bcity\b|\btown\b/);
+    const states = pick(/\bstate\b/);
+    const birthdays = pick(/birth|bday|b-day|\bdob\b/);
+    return { first, last, full, emails, phones, streets, zips, cities, states, birthdays };
+  }
+
+  function guessCompass(header) {
+    const h = header.map(x => clean(x).toLowerCase());
+    const first = h.findIndex(x => x === "first name"), last = h.findIndex(x => x === "last name");
+    const emails = h.map((x, i) => /email/.test(x) && !/obsolete/.test(x) ? i : null).filter(x => x != null);
+    // Compass marks the primary email by putting "Primary" in front of whichever type it is
+    const primary = h.map((x, i) => /^primary\b.*email/.test(x) && !/obsolete/.test(x) ? i : null).filter(x => x != null);
+    const plain = h.indexOf("email");
+    const phones = h.map((x, i) => /phone|mobile|cell/.test(x) && !/fax|obsolete/.test(x) ? i : null).filter(x => x != null);
+    const streets = h.map((x, i) => /address/.test(x) && !/email|line ?2|city|state|zip|country|obsolete/.test(x) ? i : null).filter(x => x != null);
+    const zips = h.map((x, i) => /zip|postal/.test(x) && !/obsolete/.test(x) ? i : null).filter(x => x != null);
+    const g = h.findIndex(x => /group/.test(x));
+    return { first: first < 0 ? null : first, last: last < 0 ? null : last, emails,
+             primary: primary.length ? primary : (plain >= 0 ? [plain] : emails.slice(0, 1)),
+             phones, streets, zips, group: g < 0 ? null : g };
+  }
+
+  function run(clientRows, cmap, compassRows, xmap) {
+    // ---- index Compass
+    const C = compassRows.map((r, i) => {
+      const f = normPart(r[xmap.first]), l = normPart(r[xmap.last]);
+      const primary = xmap.primary.map(j => clean(r[j])).find(Boolean) || "";
+      const all = new Set(xmap.emails.flatMap(j => emailsIn(r[j])));
+      const phones = new Set((xmap.phones || []).flatMap(j => phonesIn(r[j])));
+      const addrs = new Set((xmap.streets || []).map(j => normAddr(r[j])).filter(a => /\d/.test(a) && a.length >= 6));
+      const zips = new Set((xmap.zips || []).map(j => zip5(r[j])).filter(Boolean));
+      const group = xmap.group != null ? clean(r[xmap.group]) : "";
+      return { i, first: f, last: l, key: `${f} ${l}`.trim(), ft: firstTok(f), primary, phones, addrs, zips, group,
+               display: [clean(r[xmap.first]), clean(r[xmap.last])].filter(Boolean).join(" "), all };
+    }).filter(c => c.key);
+    const byKey = new Map(), byEmail = new Map(), byLast = new Map(), byFirstCanon = new Map(), byPhone = new Map(), byAddr = new Map();
+    const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+    C.forEach(c => {
+      push(byKey, c.key, c);
+      if (c.last) push(byLast, c.last, c);
+      if (c.ft) canon(c.ft).forEach(k => push(byFirstCanon, k, c));
+      c.all.forEach(e => { if (!isGeneric(e)) push(byEmail, e, c); });
+      c.phones.forEach(p => push(byPhone, p, c));
+      c.addrs.forEach(a => push(byAddr, a, c));
+    });
+    // does a Compass contact's name fit this client name? (exact, nickname, or small typo on each half)
+    const nameFits = (f, l, c) => (sameFirst(firstTok(f), c.ft) || lev(f, c.first) >= FUZZY) && (l === c.last || lev(l, c.last) >= FUZZY);
+
+    const results = clientRows.map((row, idx) => {
+      const nm = clientName(row, cmap);
+      const f = normPart(nm.first), l = normPart(nm.last), key = `${f} ${l}`.trim();
+      const myEmails = [...new Set(cmap.emails.flatMap(j => emailsIn(row[j])))];
+      const myPhones = [...new Set((cmap.phones || []).flatMap(j => phonesIn(row[j])))];
+      const myAddrs = [...new Set((cmap.streets || []).map(j => normAddr(row[j])).filter(a => /\d/.test(a) && a.length >= 6))];
+      const myZips = new Set((cmap.zips || []).map(j => zip5(row[j])).filter(Boolean));
+      const res = { idx, name: nm.raw || "(no name)", status: "none", how: "", compass: null, note: "" };
+      const done = (c, how) => { res.status = "match"; res.compass = c; res.how = how; return res; };
+      const skip = note => { res.status = "skip"; res.note = note; return res; };
+      const isPerson = nm.raw && !ENTITY.test(nm.raw) && !MULTI.test(nm.raw) && f && l;
+
+      // 1. EMAIL counts on its own: an email (not info@, help@ etc.) that's on exactly one Compass contact is a match
+      const realEmails = myEmails.filter(e => !isGeneric(e));
+      const byE = new Set(realEmails.flatMap(e => byEmail.get(e) || []));
+      if (byE.size === 1) return done([...byE][0], "Email");
+      // an email on 2+ Compass contacts proves nothing - fall through to the name rules
+
+      // RULE: if more than one Compass contact has this name, skip - no matter what else lines up
+      let named = [];
+      if (isPerson) {
+        const pool = new Set([...(byKey.get(key) || []), ...(byLast.get(l) || []), ...canon(firstTok(f)).flatMap(k => byFirstCanon.get(k) || [])]);
+        named = [...pool].filter(c => nameFits(f, l, c));
+        if (named.length > 1) return skip(`${named.length} Compass contacts with this name: ${named.slice(0, 3).map(c => c.display).join(", ")}`);
+      }
+
+      // everything below needs a real person with a first and last name
+      if (!nm.raw) return skip("No name");
+      if (ENTITY.test(nm.raw)) return skip("Company / trust - not matched by name");
+      if (MULTI.test(nm.raw)) return skip("More than one person in the name");
+      if (!f || !l) return skip("No first or last name - not enough to match safely");
+      if (!named.length) return res;                       // no Compass contact has this name
+      const c = named[0];                                   // the one and only name match
+
+      // 2. name + phone / name + address back it up
+      const what = [];
+      if (myPhones.some(p => c.phones.has(p))) what.push("phone");
+      if (myAddrs.some(a => c.addrs.has(a))) what.push("address");   // street match is enough - zips can differ
+      if (what.length) return done(c, "Name + " + what.map(w => w[0].toUpperCase() + w.slice(1)).join(" + "));
+
+      // 3. exact name
+      if (c.key === key) return done(c, "Exact Name");
+
+      // 4. nickname / small typo - one half of the name exact, and nothing else even close
+      const fs = sameFirst(firstTok(f), c.ft) ? 100 : lev(f, c.first);
+      const ls = l === c.last ? 100 : lev(l, c.last);
+      // without an email, phone or address to back it up, only ONE thing may differ:
+      // a nickname with an exact last name, or an exact first name with a small last-name typo
+      const firstExact = f === c.first, lastExact = l === c.last;
+      if (!(lastExact && fs === 100) && !(firstExact && ls >= FUZZY))
+        return skip(`Name is close to "${c.display}" but not close enough without an email, phone or address to confirm`);
+      const near = [...new Set([...(byLast.get(l) || []), ...canon(firstTok(f)).flatMap(k => byFirstCanon.get(k) || [])])]
+        .filter(x => x !== c && lev(f, x.first) >= 70 && lev(l, x.last) >= 70);
+      if (near.length) return skip(`Could be ${[c, ...near].slice(0, 3).map(x => x.display).join(" or ")}`);
+      return done(c, "Nickname / Spelling");
+    });
+
+    // never give the same Compass contact to two client rows
+    const used = new Map();
+    results.filter(r => r.status === "match").forEach(r => { const k = r.compass.i; used.set(k, (used.get(k) || 0) + 1); });
+    results.forEach(r => {
+      if (r.status === "match" && used.get(r.compass.i) > 1) {
+        r.status = "skip"; r.note = `${used.get(r.compass.i)} rows in this file match the same Compass contact "${r.compass.display}"`; r.compass = null; r.how = "";
+      }
+    });
+    // what gets written
+    results.forEach(r => {
+      if (r.status !== "match") return;
+      r.group = r.compass.group || "";
+      if (!r.compass.primary) { r.status = "noemail"; r.note = `Matched "${r.compass.display}" but it has no email in Compass`; return; }
+      r.email = r.compass.primary;
+      const mine = cmap.emails.flatMap(j => emailsIn(clientRows[r.idx][j]));
+      r.note = `Matched "${r.compass.display}"` + (mine.includes(r.email.toLowerCase()) ? " - client row already has this email" : "");
+    });
+    return results;
+  }
+
+  // Proper Case - only touches values that are ALL CAPS or all lowercase, so "DeLuca" and "McKenzie" are left alone
+  function properCase(v, kind) {
+    const s = clean(v);
+    if (!s || /@/.test(s)) return s;
+    const letters = s.replace(/[^A-Za-z]/g, "");
+    if (letters.length < 2 || (s !== s.toUpperCase() && s !== s.toLowerCase())) return s;
+    if (kind === "state" && letters.length === 2) return s.toUpperCase();
+    let out = s.toLowerCase().replace(/(^|[\s\-'/(.&])([a-z])/g, (m, p, c) => p + c.toUpperCase());
+    out = out.replace(/\bMc([a-z])/g, (m, c) => "Mc" + c.toUpperCase())
+      .replace(/\b(Ii|Iii|Iv|Llc|Lp|Llp|Inc|Hdfc|Po|Ne|Nw|Se|Sw|Usa)\b/g, m => m.toUpperCase())
+      .replace(/(\d)(St|Nd|Rd|Th)\b/g, (m, d, x) => d + x.toLowerCase());
+    return out;
+  }
+
+  // What the finished file holds - for the summary
+  function summarize(clientRows, cmap, results) {
+    const S = { names: 0, emails: 0, emailsFromCompass: 0, phones: 0, addresses: 0, birthdays: 0 };
+    clientRows.forEach((row, i) => {
+      if (clientName(row, cmap).raw) S.names++;
+      const em = new Set(cmap.emails.flatMap(j => emailsIn(row[j])));
+      const r = results[i];
+      if (r && r.email && !em.has(r.email.toLowerCase())) { em.add(r.email.toLowerCase()); S.emailsFromCompass++; }
+      S.emails += em.size;
+      const ph = new Set((cmap.phones || []).flatMap(j => { const d = phonesIn(row[j]); return d.length ? d : (clean(row[j]) ? [clean(row[j])] : []); }));
+      S.phones += ph.size;
+      S.addresses += new Set((cmap.streets || []).map(j => normAddr(row[j])).filter(Boolean)).size;
+      if ((cmap.birthdays || []).some(j => clean(row[j]))) S.birthdays++;
+    });
+    return S;
+  }
+
+  return { run, guessClient, guessCompass, clientName, normPart, phonesIn, normAddr, properCase, summarize };
+})();
+if (typeof module !== "undefined") module.exports = MATCH;
+</script>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const S = { client: null, compass: null, cmap: null, xmap: null, results: null, filter: "match" };
+
+  function readFile(file, cb) {
+    const r = new FileReader(), isText = /\.(csv|tsv|txt)$/i.test(file.name);
+    r.onload = () => {
+      try {
+        const wb = isText ? XLSX.read(r.result, { type: "string", raw: true }) : XLSX.read(r.result, { type: "array" });
+        let best = wb.SheetNames[0], max = -1;
+        wb.SheetNames.forEach(n => { const e = XLSX.utils.decode_range(wb.Sheets[n]["!ref"] || "A1").e.r; if (e > max) { max = e; best = n; } });
+        let rows = XLSX.utils.sheet_to_json(wb.Sheets[best], { header: 1, raw: false, defval: "", blankrows: false })
+          .map(x => x.map(c => String(c ?? "")));
+        // header = the first of the top rows that has 3+ filled cells including a name or email column
+        let h = rows.slice(0, 15).findIndex(x => x.filter(c => c.trim()).length >= 3 && x.some(c => /name|e-?mail/i.test(c)));
+        if (h < 0) h = 0;
+        cb({ name: file.name, header: rows[h].map(c => c.trim()), rows: rows.slice(h + 1).filter(x => x.some(c => String(c).trim())), headerRow: h });
+      } catch (e) { alert("Couldn't read " + file.name + ": " + e.message); }
+    };
+    isText ? r.readAsText(file) : r.readAsArrayBuffer(file);
+  }
+
+  function setupDrop(which) {
+    const dz = $("dz-" + which), inp = $("f-" + which);
+    ["dragenter", "dragover"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add("over"); }));
+    ["dragleave", "drop"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove("over"); }));
+    dz.addEventListener("drop", e => e.dataTransfer.files[0] && load(e.dataTransfer.files[0]));
+    inp.addEventListener("change", e => e.target.files[0] && load(e.target.files[0]));
+    function load(file) {
+      readFile(file, data => {
+        S[which] = data;
+        dz.classList.add("done");
+        $("fn-" + which).textContent = `${file.name} - ${data.rows.length.toLocaleString()} rows`;
+        if (which === "client") S.cmap = MATCH.guessClient(data.header);
+        else S.xmap = MATCH.guessCompass(data.header);
+        renderMap();
+      });
+    }
+  }
+  setupDrop("client"); setupDrop("compass");
+
+  function opts(header, sel, blank = true) {
+    return (blank ? `<option value="">-</option>` : "") + header.map((h, i) => `<option value="${i}" ${sel === i ? "selected" : ""}>${esc(h || "Column " + (i + 1))}</option>`).join("");
+  }
+  function multi(header, sel) { return header.map((h, i) => `<option value="${i}" ${sel.includes(i) ? "selected" : ""}>${esc(h || "Column " + (i + 1))}</option>`).join(""); }
+
+  function renderMap() {
+    $("mapCard").classList.remove("hidden");
+    if (S.client) {
+      const h = S.client.header, m = S.cmap;
+      $("mapClient").innerHTML = `
+        <label>Client - First Name<select data-k="first">${opts(h, m.first)}</select></label>
+        <label>Client - Last Name<select data-k="last">${opts(h, m.last)}</select></label>
+        <label>Client - Full Name (If No First/Last)<select data-k="full">${opts(h, m.full)}</select></label>
+        <label>Client - Email Columns (Ctrl/Cmd-Click For More)<select data-k="emails" multiple size="3">${multi(h, m.emails)}</select></label>
+        <label>Client - Phone Columns<select data-k="phones" multiple size="3">${multi(h, m.phones)}</select></label>
+        <label>Client - Street Address Columns<select data-k="streets" multiple size="3">${multi(h, m.streets)}</select></label>
+        <label>Client - City Columns<select data-k="cities" multiple size="3">${multi(h, m.cities)}</select></label>
+        <label>Client - Birthday Columns<select data-k="birthdays" multiple size="3">${multi(h, m.birthdays)}</select></label>`;
+      $("mapClient").querySelectorAll("select").forEach(s => s.onchange = () => {
+        const k = s.dataset.k;
+        S.cmap[k] = s.multiple ? [...s.selectedOptions].map(o => +o.value) : (s.value === "" ? null : +s.value);
+        check();
+      });
+    }
+    if (S.compass) {
+      const h = S.compass.header, m = S.xmap;
+      $("mapCompass").innerHTML = `
+        <label>Compass - First Name<select data-k="first">${opts(h, m.first)}</select></label>
+        <label>Compass - Last Name<select data-k="last">${opts(h, m.last)}</select></label>
+        <label>Compass - Primary Email (First One Filled Is Used)<select data-k="primary" multiple size="3">${multi(h, m.primary)}</select></label>
+        <label>Compass - All Email Columns (For Matching)<select data-k="emails" multiple size="3">${multi(h, m.emails)}</select></label>
+        <label>Compass - Phone Columns<select data-k="phones" multiple size="3">${multi(h, m.phones)}</select></label>
+        <label>Compass - Street Address Columns<select data-k="streets" multiple size="3">${multi(h, m.streets)}</select></label>
+        <label>Compass - Group<select data-k="group">${opts(h, m.group)}</select></label>`;
+      $("mapCompass").querySelectorAll("select").forEach(s => s.onchange = () => {
+        const k = s.dataset.k;
+        S.xmap[k] = s.multiple ? [...s.selectedOptions].map(o => +o.value) : (s.value === "" ? null : +s.value);
+        check();
+      });
+    }
+    check();
+  }
+  function check() {
+    const ok = S.client && S.compass && S.xmap.first != null && S.xmap.last != null && S.xmap.primary.length &&
+      ((S.cmap.first != null && S.cmap.last != null) || S.cmap.full != null || S.cmap.emails.length);
+    $("run").disabled = !ok;
+  }
+
+  $("run").onclick = () => {
+    $("run").disabled = true; $("run").textContent = "Matching...";
+    setTimeout(() => {
+      S.results = MATCH.run(S.client.rows, S.cmap, S.compass.rows, S.xmap);
+      $("run").disabled = false; $("run").textContent = "Find Matches";
+      S.filter = "match"; renderResults();
+    }, 20);
+  };
+
+  function renderResults() {
+    const R = S.results, n = k => R.filter(r => r.status === k).length;
+    $("resCard").classList.remove("hidden");
+    const sm = MATCH.summarize(S.client.rows, S.cmap, R);
+    S.summary = sm;
+    $("sum").innerHTML = [
+      [sm.names, "Names Added"],
+      [sm.emails, "Emails Added", sm.emailsFromCompass ? `Includes ${sm.emailsFromCompass.toLocaleString()} From Compass` : ""],
+      [sm.phones, "Phones Added"], [sm.addresses, "Addresses Added"], [sm.birthdays, "Birthdays Added"],
+    ].map(([v, l, x]) => `<div><b>${v.toLocaleString()}</b><span>${l}</span>${x ? `<small>${x}</small>` : ""}</div>`).join("");
+    const cards = [["match", "ok", "Matched - Email Added"], ["skip", "warn", "Skipped - Not Certain"], ["noemail", "", "Matched - No Email In Compass"], ["none", "", "Not In Compass"]];
+    $("stats").innerHTML = cards.map(([k, cls, label]) => `<div class="stat ${cls} ${S.filter === k ? "on" : ""}" data-f="${k}"><b>${n(k).toLocaleString()}</b><span>${label}</span></div>`).join("");
+    $("stats").querySelectorAll(".stat").forEach(s => s.onclick = () => { S.filter = s.dataset.f; renderResults(); });
+    const list = R.filter(r => r.status === S.filter);
+    const pill = { match: "ok", skip: "warn" }[S.filter] || "ref";
+    const MAX = 1000;
+    $("tbl").innerHTML = `<tr><th>Row</th><th>Client Name</th><th>Compass Primary Email</th><th>Compass Group</th><th>Matched By</th><th>Notes</th></tr>` +
+      list.slice(0, MAX).map(r => `<tr><td class="rn">${r.idx + S.client.headerRow + 2}</td><td>${esc($("proper").checked ? r.name.split(" ").map(w => MATCH.properCase(w, "name")).join(" ") : r.name)}</td><td>${esc(r.email || "")}</td><td>${esc(r.group || "")}</td>
+        <td>${r.how ? `<span class="pill ${pill}">${esc(r.how)}</span>` : ""}</td><td>${esc(r.note)}</td></tr>`).join("");
+    $("tblNote").textContent = list.length > MAX ? `Showing the first ${MAX} - the download has all rows.` : (list.length ? "" : "Nothing here.");
+  }
+
+  document.addEventListener("pc", () => S.results && renderResults());
+  $("dl").onclick = () => {
+    const head = [...S.client.header, "Compass Primary Email", "Compass Group", "Compass Match", "Compass Match Notes"];
+    const label = { match: "", skip: "Skipped", noemail: "Matched - No Email", none: "Not In Compass" };
+    const m = S.cmap, kinds = {};
+    if ($("proper").checked) {
+      [m.first, m.last, m.full].filter(x => x != null).forEach(j => kinds[j] = "name");
+      (m.streets || []).forEach(j => kinds[j] = "address");
+      (m.cities || []).forEach(j => kinds[j] = "city");
+      (m.states || []).forEach(j => kinds[j] = "state");
+    }
+    const fix = (v, j) => kinds[j] ? MATCH.properCase(v, kinds[j]) : (v ?? "");
+    const out = [head, ...S.client.rows.map((row, i) => {
+      const r = S.results[i];
+      return [...S.client.header.map((_, j) => fix(row[j], j)), r.email || "", r.group || "", r.status === "match" ? r.how : label[r.status], r.note];
+    })];
+    const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(out);
+    const sm = S.summary, R = S.results, n = k => R.filter(r => r.status === k).length;
+    const sumRows = [["Client File Summary", ""], ["Names Added", sm.names], ["Emails Added", sm.emails], ["  Includes From Compass", sm.emailsFromCompass],
+      ["Phones Added", sm.phones], ["Addresses Added", sm.addresses], ["Birthdays Added", sm.birthdays], ["", ""],
+      ["Compass Matches", ""], ["Matched - Email Added", n("match")], ["Matched - No Email In Compass", n("noemail")],
+      ["Skipped - Not Certain", n("skip")], ["Not In Compass", n("none")]];
+    const ws2 = XLSX.utils.aoa_to_sheet(sumRows); ws2["!cols"] = [{ wch: 32 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(wb, ws2, "Summary");
+    XLSX.utils.book_append_sheet(wb, ws, "With Compass Emails");
+    XLSX.writeFile(wb, S.client.name.replace(/\.[^.]+$/, "") + " - Anteater.xlsx");
+  };
+})();
+</script>
+</body>
+</html>
